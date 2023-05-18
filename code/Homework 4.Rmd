@@ -9,3 +9,71 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
+```{r}
+library(tidyverse)
+library(here)
+library(naniar)
+library(performance)
+library(broom)
+library(flextable)
+library(ggeffects)
+library(car)
+here("data", "ntl6_v12.csv")
+
+```
+
+Mathematical:
+Null Hypothesis (H0): β1 = β2
+Alternative Hypothesis (HA): β1 ≠ β2
+
+Biological:
+Null Hypothesis: 
+
+```{r}
+fish_data <- read.csv("~/github/ENVS-193DS_homework-04_Yip-William/data/ntl6_v12.csv")
+Trout_Perch_data <- fish_data %>%
+  filter(spname == "TROUTPERCH") %>%
+  group_by(year4, length, weight) %>%
+  ungroup()
+```
+
+```{r}
+gg_miss_var(Trout_Perch_data)
+```
+
+```{r}
+ggplot(data = Trout_Perch_data, aes(x = length, y = weight)) +
+  geom_point()
+```
+
+```{r}
+modelfish <- lm(weight ~ length, data = Trout_Perch_data)
+par(mfrow = c(2,2))
+plot(modelfish)
+summary(modelfish)
+```
+
+```{r}
+model_fish_anova <- anova(modelfish)
+model_fish_anova
+
+```
+
+```{r}
+model_fish_table <- tidy(model_fish_anova) %>%
+  mutate(across(sumsq:meansq, ~ round(.x, digits = 5))) %>%
+  mutate(statsitic = round(statistic, digits = 1)) %>%
+  mutate(p.value = case_when(
+    p.value < 0.001 ~ "<0.001")) %>%
+  mutate(term == case_when(
+    term == "length" ~ "Length (mm)",TRUE ~ term)) %>%
+  flextable() %>%
+  set_header_labels(df = "Degrees of Freedom",
+                   sumsq = "Sums of squares",
+                   meansq = "Mean squares",
+                   statistic = "F-statistic",
+                   p.value = "p-value")
+model_fish_table
+  
+```
+
